@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  cafes         Cafe[]
+  reviews       Review[]
+  wantToGo      WantToGo[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Cafe {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  address     String
+  latitude    Float
+  longitude   Float
+  phone       String?
+  website     String?
+  openingHours String?
+  dogRules    String?  // 犬に関するルール（サイズ制限など）
+  facilities  String?  // 設備情報（テラス席、ドッグランなど）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String   // 登録したユーザー
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews     Review[]
+  images      Image[]
+  wantToGo    WantToGo[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5の評価
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cafeId    String
+  userId    String
+
+  cafe      Cafe     @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cafeId, userId]) // 一人のユーザーは一つの店舗に一つのレビューのみ
+}
+
+model Image {
+  id        String   @id @default(cuid())
+  url       String
+  cafeId    String
+  createdAt DateTime @default(now())
+
+  cafe      Cafe     @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+}
+
+model WantToGo {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  cafeId    String
+  userId    String
+
+  cafe      Cafe     @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cafeId, userId]) // 一人のユーザーは一つの店舗を一度だけ「行きたい」に追加
+}
