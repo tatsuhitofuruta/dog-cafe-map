@@ -75,8 +75,9 @@ export default function CafeDetailPage() {
         <div className="mb-6">
           <img
             src={cafe.images[0]?.url || 'https://via.placeholder.com/1200x400'}
-            alt={cafe.name}
+            alt={`${cafe.name}の外観または店内の様子`}
             className="w-full h-96 object-cover rounded-lg shadow-lg"
+            loading="eager"
           />
         </div>
 
@@ -90,8 +91,8 @@ export default function CafeDetailPage() {
 
               {/* 評価と行きたいボタン */}
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="flex text-yellow-400">
+                <div className="flex items-center" role="group" aria-label="評価">
+                  <div className="flex text-yellow-400" aria-hidden="true">
                     {[...Array(5)].map((_, i) => (
                       <span key={i}>
                         {i < Math.floor(cafe.averageRating || 0) ? '★' : '☆'}
@@ -101,18 +102,25 @@ export default function CafeDetailPage() {
                   <span className="ml-2 text-gray-600">
                     {cafe.averageRating?.toFixed(1)} ({cafe.reviews.length}件)
                   </span>
+                  <span className="sr-only">
+                    5点満点中{cafe.averageRating?.toFixed(1)}点、{cafe.reviews.length}件のレビュー
+                  </span>
                 </div>
 
                 <button
                   onClick={toggleWantToGo}
-                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  className={`px-6 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     isWantToGo
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
+                  aria-pressed={isWantToGo}
+                  aria-label={`${cafe.name}を行きたいリストに${isWantToGo ? '追加済み' : '追加する'}`}
                 >
                   {isWantToGo ? '行きたい✓' : '行きたい'}
-                  <span className="ml-2 text-sm">({cafe.wantToGoCount})</span>
+                  <span className="ml-2 text-sm" aria-label={`${cafe.wantToGoCount}人が行きたいと登録`}>
+                    ({cafe.wantToGoCount})
+                  </span>
                 </button>
               </div>
 

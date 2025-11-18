@@ -2,20 +2,19 @@
 
 import dynamic from 'next/dynamic'
 import { useState, useEffect } from 'react'
-import { cafeApi } from '@/lib/api'
+import { cafeApi, ApiError } from '@/lib/api'
+import { CafeWithStats } from '@/types/cafe'
+import { CafeCardSkeleton, MapSkeleton } from '@/components/Skeleton'
+import Link from 'next/link'
 
 // Leafletはクライアントサイドのみで動作するため、dynamic importを使用
 const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-[600px] bg-gray-200 rounded-lg flex items-center justify-center">
-      <p className="text-gray-600">地図を読み込み中...</p>
-    </div>
-  ),
+  loading: () => <MapSkeleton />,
 })
 
 export default function Home() {
-  const [cafes, setCafes] = useState<any[]>([])
+  const [cafes, setCafes] = useState<CafeWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -23,11 +22,15 @@ export default function Home() {
     const fetchCafes = async () => {
       try {
         setLoading(true)
+        setError(null)
         const data = await cafeApi.getAll()
         setCafes(data)
       } catch (err) {
         console.error('Failed to fetch cafes:', err)
-        setError('店舗情報の取得に失敗しました')
+        const errorMessage = err instanceof ApiError
+          ? err.message
+          : '店舗情報の取得に失敗しました'
+        setError(errorMessage)
       } finally {
         setLoading(false)
       }
@@ -38,10 +41,22 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">読み込み中...</p>
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              犬と一緒に行けるカフェを探そう
+            </h1>
+            <p className="text-gray-600">
+              全国の犬連れOKのカフェ・レストランをマップから検索
+            </p>
+          </div>
+          <MapSkeleton />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            {[...Array(6)].map((_, i) => (
+              <CafeCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       </main>
     )
@@ -50,11 +65,15 @@ export default function Home() {
   if (error) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            エラーが発生しました
+          </h2>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium"
           >
             再読み込み
           </button>
@@ -110,25 +129,31 @@ export default function Home() {
                       </span>
                     </div>
                   )}
-                  <a
+                  <Link
                     href={`/cafes/${cafe.id}`}
                     className="text-blue-600 hover:underline text-sm font-medium"
                   >
                     詳細を見る →
-                  </a>
+                  </Link>
                 </div>
               ))}
             </div>
           </>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">まだ店舗が登録されていません</p>
-            <a
+            <div className="text-6xl mb-4">🏪</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              まだ店舗が登録されていません
+            </h2>
+            <p className="text-gray-600 mb-6">
+              あなたが最初の店舗を登録してみませんか？
+            </p>
+            <Link
               href="/cafes/new"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
+              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium transition-colors"
             >
               最初の店舗を登録する
-            </a>
+            </Link>
           </div>
         )}
       </div>

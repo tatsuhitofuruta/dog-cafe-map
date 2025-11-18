@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
     // Database health check
     await prisma.$queryRaw`SELECT 1`
+
+    logger.debug('Health check passed')
 
     return NextResponse.json({
       status: 'healthy',
@@ -12,7 +15,7 @@ export async function GET() {
       database: 'connected',
     })
   } catch (error) {
-    console.error('Health check failed:', error)
+    logger.error('Health check failed', error instanceof Error ? error : new Error(String(error)))
 
     return NextResponse.json(
       {

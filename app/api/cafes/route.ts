@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 // バリデーションスキーマ
 const createCafeSchema = z.object({
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(cafesWithAverage)
   } catch (error) {
-    console.error('Cafe fetch error:', error)
+    logger.error('Cafe fetch error', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: '店舗の取得に失敗しました' },
       { status: 500 }
@@ -107,13 +108,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(cafe, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      logger.warn('Cafe validation error', { errors: error.errors })
       return NextResponse.json(
         { error: 'バリデーションエラー', details: error.errors },
         { status: 400 }
       )
     }
 
-    console.error('Cafe creation error:', error)
+    logger.error('Cafe creation error', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: '店舗の作成に失敗しました' },
       { status: 500 }

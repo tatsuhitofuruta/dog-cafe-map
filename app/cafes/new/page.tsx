@@ -285,7 +285,8 @@ export default function NewCafePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label={isSubmitting ? '店舗を登録中です' : '店舗を登録する'}
               >
                 {isSubmitting ? '登録中...' : '店舗を登録'}
               </button>
@@ -293,7 +294,8 @@ export default function NewCafePage() {
                 type="button"
                 onClick={() => router.back()}
                 disabled={isSubmitting}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                aria-label="店舗登録をキャンセルする"
               >
                 キャンセル
               </button>
