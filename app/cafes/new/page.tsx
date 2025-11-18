@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { cafeApi, ApiError } from '@/lib/api'
 
 export default function NewCafePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -26,21 +28,61 @@ export default function NewCafePage() {
     return null
   }
 
+  const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number }> => {
+    // 簡易的なGeocoding（本番ではGoogle Maps APIやOpenStreetMap Nominatimを使用）
+    // ここでは東京の中心座標をデフォルトとする
+    try {
+      // Nominatim APIを使用（無料、ただしレート制限あり）
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'DogCafeMap/1.0',
+          },
+        }
+      )
+
+      const data = await response.json()
+
+      if (data && data.length > 0) {
+        return {
+          latitude: parseFloat(data[0].lat),
+          longitude: parseFloat(data[0].lon),
+        }
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err)
+    }
+
+    // デフォルト: 東京駅
+    return { latitude: 35.6812, longitude: 139.7671 }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError(null)
 
     try {
-      // ここでは簡易的に処理（実際はAPIに送信）
-      // 住所から緯度経度を取得するには、Geocoding APIを使用
-      console.log('送信データ:', formData)
+      // 住所から緯度経度を取得
+      const { latitude, longitude } = await geocodeAddress(formData.address)
 
-      // 仮の成功処理
+      // APIに送信
+      const cafe = await cafeApi.create({
+        ...formData,
+        latitude,
+        longitude,
+      })
+
       alert('店舗を登録しました！')
-      router.push('/')
-    } catch (error) {
-      console.error('登録エラー:', error)
-      alert('登録に失敗しました。')
+      router.push(`/cafes/${cafe.id}`)
+    } catch (err) {
+      console.error('登録エラー:', err)
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('登録に失敗しました。もう一度お試しください。')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -231,6 +273,13 @@ export default function NewCafePage() {
               />
             </div>
 
+            {/* エラーメッセージ */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
             {/* 送信ボタン */}
             <div className="flex space-x-4">
               <button
@@ -243,7 +292,8 @@ export default function NewCafePage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-md hover:bg-gray-300 transition-colors font-medium"
+                disabled={isSubmitting}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
               >
                 キャンセル
               </button>

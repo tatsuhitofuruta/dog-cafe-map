@@ -26,10 +26,21 @@
 - **バックエンド**
   - Next.js API Routes
   - Prisma (ORM)
-  - SQLite (開発環境)
+  - PostgreSQL (本番環境) / SQLite (ローカル開発)
 
 - **認証**
   - NextAuth.js
+
+- **インフラ (AWS)**
+  - ECS Fargate (コンテナ実行環境)
+  - RDS PostgreSQL (データベース)
+  - ALB (ロードバランサー)
+  - ECR (コンテナレジストリ)
+  - Secrets Manager (機密情報管理)
+  - VPC, CloudWatch, etc.
+
+- **IaC**
+  - Terraform (インフラ管理)
 
 ## 🚀 セットアップ
 
@@ -86,6 +97,10 @@ npm run dev
 dog-cafe-map/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API Routes
+│   │   ├── auth/          # NextAuth API
+│   │   ├── cafes/         # 店舗CRUD API
+│   │   ├── my/            # ユーザー関連API
+│   │   └── health/        # ヘルスチェック
 │   ├── auth/              # 認証ページ
 │   ├── cafes/             # 店舗関連ページ
 │   ├── my/                # マイページ
@@ -97,11 +112,25 @@ dog-cafe-map/
 │   ├── Providers.tsx
 │   └── ShareButtons.tsx
 ├── lib/                   # ユーティリティ関数
-│   └── prisma.ts
+│   ├── api.ts            # APIクライアント
+│   └── prisma.ts         # Prismaクライアント
 ├── prisma/               # Prismaスキーマ
 │   └── schema.prisma
+├── terraform/            # インフラ定義
+│   ├── modules/          # Terraformモジュール
+│   │   ├── vpc/
+│   │   ├── ecs/
+│   │   ├── rds/
+│   │   ├── alb/
+│   │   └── ecr/
+│   └── environments/     # 環境別設定
+│       ├── dev/
+│       └── prod/
+├── scripts/              # デプロイスクリプト
 ├── public/               # 静的ファイル
 ├── types/                # TypeScript型定義
+├── Dockerfile            # 本番環境用
+├── DEPLOYMENT.md         # デプロイガイド
 └── README.md
 ```
 
@@ -117,16 +146,60 @@ dog-cafe-map/
 
 詳細は `prisma/schema.prisma` を参照してください。
 
+## ☁️ AWSへのデプロイ
+
+本番環境へのデプロイ方法は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照してください。
+
+### クイックスタート
+
+```bash
+# Terraformでインフラをプロビジョニング
+cd terraform
+terraform init -backend-config="environments/dev/backend.conf"
+terraform apply -var-file="environments/dev/terraform.tfvars"
+
+# Dockerイメージをビルド・デプロイ
+./scripts/deploy.sh dev
+```
+
+### アーキテクチャ
+
+- **ECS Fargate**: サーバーレスコンテナ実行環境
+- **RDS PostgreSQL**: マネージドデータベース
+- **ALB**: HTTPSロードバランサー
+- **VPC**: 2つのAZにまたがるプライベート・パブリックサブネット構成
+- **Secrets Manager**: 機密情報の安全な管理
+
+詳細なインフラ構成は `terraform/` ディレクトリを参照してください。
+
 ## 🎯 今後の開発予定
 
-- [ ] 画像アップロード機能
-- [ ] 検索・フィルター機能（エリア、犬のサイズなど）
-- [ ] Google Maps APIの統合（Geocoding）
-- [ ] OAuth認証（Google、Twitterなど）
+### フロントエンド
+- [ ] 画像アップロード機能 (S3統合)
+- [ ] 検索・フィルター機能（エリア、犬のサイズ、評価など）
+- [ ] 地図のクラスタリング表示
+- [ ] PWA対応
+- [ ] ダークモード
+
+### バックエンド
+- [ ] Google Maps APIの統合（より正確なGeocoding）
+- [ ] OAuth認証（Google、Twitter、LINE）
 - [ ] 店舗の自動登録機能（外部API連携）
-- [ ] モバイルアプリ対応
-- [ ] 管理者機能
-- [ ] 通知機能
+- [ ] 全文検索（ElasticsearchまたはAlgolia）
+- [ ] 画像のリサイズ・最適化（Lambda + S3）
+
+### インフラ
+- [ ] CI/CD パイプライン (GitHub Actions)
+- [ ] CloudFront CDN統合
+- [ ] オートスケーリング設定
+- [ ] マルチリージョン対応
+- [ ] バックアップとディザスタリカバリー
+
+### その他
+- [ ] 管理者機能（不適切なコンテンツの管理）
+- [ ] 通知機能（新しいレビュー、行きたいリストの更新）
+- [ ] ソーシャル機能（フォロー、いいね）
+- [ ] モバイルアプリ（React Native）
 
 ## 📝 ライセンス
 
